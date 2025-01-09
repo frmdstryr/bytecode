@@ -196,6 +196,31 @@ class FlagsTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 code.update_flags(is_async=is_async)
 
+    def test_update_flags_on_coroutine(self):
+        async def bar():
+            return 1
+
+        async def foo():
+            return await bar()
+
+        code = Bytecode.from_code(foo.__code__)
+        code.update_flags()
+        self.assertTrue(code.flags & CompilerFlags.COROUTINE)
+        self.assertFalse(code.flags & CompilerFlags.ASYNC_GENERATOR)
+
+    def test_update_flags_on_async_gen(self):
+        async def bar():
+            return 1
+
+        async def foo():
+            n = await bar()
+            yield n
+
+        code = Bytecode.from_code(foo.__code__)
+        code.update_flags()
+        self.assertTrue(code.flags & CompilerFlags.ASYNC_GENERATOR)
+        self.assertFalse(code.flags & CompilerFlags.COROUTINE)
+
 
 if __name__ == "__main__":
     unittest.main()  # pragma: no cover
